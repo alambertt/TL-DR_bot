@@ -1,0 +1,10 @@
+[watch]
+# Include TypeScript files for watching
+include = ["src/**/*.ts", "src/**/*.js", ".env"]
+# Exclude node_modules and build artifacts
+exclude = ["node_modules", "dist", "build", "*.log"]
+# Clear console on restart
+clearScreen = true
+# Ignore initial run
+ignoreInitial = false
+
