@@ -2,7 +2,13 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "watch": "bun --watch run src/index.ts"
+    "watch": "bun --watch run src/index.ts",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop tldr-telegram-bot",
+    "pm2:restart": "pm2 restart tldr-telegram-bot",
+    "pm2:delete": "pm2 delete tldr-telegram-bot",
+    "pm2:logs": "pm2 logs tldr-telegram-bot",
+    "pm2:status": "pm2 status"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
