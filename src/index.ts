@@ -56,22 +56,6 @@ bot.on(message('text'), async ctx => {
       }
       messageResponse = messageResponse.trim().replace(/\* /g, '');
 
-      // Check if the summary is more than 80% of the original message length
-      const summaryLength = messageResponse.length;
-
-      if (summaryLength > MAX_MESSAGE_LENGTH * 1.5) {
-        let shorterResponse = '';
-        const secondResponse = await ai.models.generateContentStream({
-          model: GEMINI_MODEL,
-          contents: SHORTER_PROMPT + `${messageText}`,
-        });
-        for await (const chunk of secondResponse) {
-          shorterResponse += chunk.text;
-        }
-        messageResponse = shorterResponse.trim().replace(/\* /g, '');
-        console.log(`✂️ Generated shorter summary (${messageResponse.length} chars)`);
-      }
-
       ctx.reply(
         `Tu mensaje es demasiado largo. Aquí tienes un resumen:
         \n${messageResponse}`,
