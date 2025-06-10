@@ -5,9 +5,10 @@ import { message } from 'telegraf/filters';
 
 dotenv.config();
 const MAX_MESSAGE_LENGTH = 1024; // Telegram's max message length
-const PROMPT = `IMPORTANT: ALWAYS respond in the EXACT SAME LANGUAGE as the input text. If the text is in Spanish, respond in Spanish. If it's in English, respond in English, etc.
 
-Extract all facts from the text and summarize it in all relevant aspects in up to seven bullet points and a 1-liner summary (max 100 characters). Pick a good matching emoji for every bullet point.
+const SHORTER_PROMPT = `IMPORTANT: ALWAYS respond in the EXACT SAME LANGUAGE as the input text. If the text is in Spanish, respond in Spanish. If it's in English, respond in English, etc.
+
+Create an EXTREMELY CONCISE summary of the text below. Maximum 5 bullet points and a 1-liner summary (max 50 characters). Pick a good matching emoji for every bullet point. Be very brief and focus only on the most essential information.
 
 REMEMBER: Your response must be in the same language as the original text below.
 
@@ -44,21 +45,33 @@ bot.on(message('text'), async ctx => {
     const chatTitle = 'title' in ctx.chat ? ctx.chat.title : 'Unknown group';
     const messageText = ctx.message.text || '';
 
-    if (!messageText) {
-      console.log('⚠️ Empty message received, skipping processing.');
-      ctx.reply('Please send a non-empty message.');
-      return;
-    }
     if (messageText.length > MAX_MESSAGE_LENGTH) {
       let messageResponse = '';
       const response = await ai.models.generateContentStream({
         model: GEMINI_MODEL,
-        contents: PROMPT + `${messageText}`,
+        contents: SHORTER_PROMPT + `${messageText}`,
       });
       for await (const chunk of response) {
         messageResponse += chunk.text;
       }
       messageResponse = messageResponse.trim().replace(/\* /g, '');
+
+      // Check if the summary is more than 80% of the original message length
+      const summaryLength = messageResponse.length;
+
+      if (summaryLength > MAX_MESSAGE_LENGTH * 1.5) {
+        let shorterResponse = '';
+        const secondResponse = await ai.models.generateContentStream({
+          model: GEMINI_MODEL,
+          contents: SHORTER_PROMPT + `${messageText}`,
+        });
+        for await (const chunk of secondResponse) {
+          shorterResponse += chunk.text;
+        }
+        messageResponse = shorterResponse.trim().replace(/\* /g, '');
+        console.log(`✂️ Generated shorter summary (${messageResponse.length} chars)`);
+      }
+
       ctx.reply(
         `Tu mensaje es demasiado largo. Aquí tienes un resumen:
         \n${messageResponse}`,
