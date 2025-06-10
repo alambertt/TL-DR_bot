@@ -56,11 +56,7 @@ bot.on(message('text'), async ctx => {
       }
       messageResponse = messageResponse.trim().replace(/\* /g, '');
 
-      ctx.reply(
-        `Tu mensaje es demasiado largo. Aquí tienes un resumen:
-        \n${messageResponse}`,
-        { reply_parameters: { message_id: ctx.message.message_id } }
-      );
+      ctx.reply(messageResponse, { reply_parameters: { message_id: ctx.message.message_id } });
       console.log(`📜 Long message from ${username} in ${chatTitle}`);
       return;
     }
