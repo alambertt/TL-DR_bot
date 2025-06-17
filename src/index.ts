@@ -13,7 +13,7 @@ Create an EXTREMELY CONCISE summary of the text below. Maximum 5 bullet points a
 REMEMBER: Your response must be in the same language as the original text below.
 
 Text: `;
-const GEMINI_MODEL = 'gemini-2.0-flash-lite';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 if (!BOT_TOKEN) {
@@ -56,7 +56,14 @@ bot.on(message('text'), async ctx => {
       }
       messageResponse = messageResponse.trim().replace(/\* /g, '');
 
-      ctx.reply(messageResponse, { reply_parameters: { message_id: ctx.message.message_id } });
+      try {
+        // Try to reply to the original message
+        await ctx.reply(messageResponse, { reply_parameters: { message_id: ctx.message.message_id } });
+      } catch (error) {
+        console.log('⚠️ Could not reply to original message, sending as regular message instead');
+        // If reply fails, send as a regular message
+        await ctx.reply(messageResponse);
+      }
       console.log(`📜 Long message from ${username} in ${chatTitle}`);
       return;
     }
