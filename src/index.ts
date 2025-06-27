@@ -8,12 +8,14 @@ const MAX_MESSAGE_LENGTH = 1024; // Telegram's max message length
 
 const SHORTER_PROMPT = `IMPORTANT: ALWAYS respond in the EXACT SAME LANGUAGE as the input text. If the text is in Spanish, respond in Spanish. If it's in English, respond in English, etc.
 
-Create an EXTREMELY CONCISE summary of the text below. Maximum 5 bullet points and a 1-liner summary (max 50 characters). Pick a good matching emoji for every bullet point. Be very brief and focus only on the most essential information.
+Create an EXTREMELY CONCISE summary of the text below. Maximum 7 bullet points and a 1-liner summary (max 100 characters). Start each bullet point with a matching emoji. Be very brief and focus only on the most essential information.
+
+DO NOT add any additional comments, explanations, or meta-commentary. ONLY provide the requested summary format.
 
 REMEMBER: Your response must be in the same language as the original text below.
 
 Text: `;
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 if (!BOT_TOKEN) {
@@ -58,11 +60,14 @@ bot.on(message('text'), async ctx => {
 
       try {
         // Try to reply to the original message
-        await ctx.reply(messageResponse, { reply_parameters: { message_id: ctx.message.message_id } });
+        await ctx.reply(messageResponse, {
+          reply_parameters: { message_id: ctx.message.message_id },
+          parse_mode: 'Markdown',
+        });
       } catch (error) {
         console.log('⚠️ Could not reply to original message, sending as regular message instead');
         // If reply fails, send as a regular message
-        await ctx.reply(messageResponse);
+        await ctx.reply(messageResponse, { parse_mode: 'Markdown' });
       }
       console.log(`📜 Long message from ${username} in ${chatTitle}`);
       return;
