@@ -2,20 +2,11 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
+import { logOperation } from './logger';
+import { GEMINI_MODEL, MAX_MESSAGE_LENGTH, SHORTER_PROMPT } from './constants';
 
 dotenv.config();
-const MAX_MESSAGE_LENGTH = 1024; // Telegram's max message length
 
-const SHORTER_PROMPT = `IMPORTANT: ALWAYS respond in the EXACT SAME LANGUAGE as the input text. If the text is in Spanish, respond in Spanish. If it's in English, respond in English, etc.
-
-Create an EXTREMELY CONCISE summary of the text below. Maximum 7 bullet points and a 1-liner summary (max 100 characters). Start each bullet point with a matching emoji. Be very brief and focus only on the most essential information.
-
-DO NOT add any additional comments, explanations, or meta-commentary. ONLY provide the requested summary format.
-
-REMEMBER: Your response must be in the same language as the original text below.
-
-Text: `;
-const GEMINI_MODEL = 'gemini-2.5-flash';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 if (!BOT_TOKEN) {
@@ -45,7 +36,6 @@ bot.on(message('text'), async ctx => {
 
   if (chatType === 'group' || chatType === 'supergroup') {
     // Message from a group chat
-    const username = ctx.from?.username || ctx.from?.first_name || 'Unknown user';
     const chatTitle = 'title' in ctx.chat ? ctx.chat.title : 'Unknown group';
     const messageText = ctx.message.text || '';
 
@@ -73,7 +63,14 @@ bot.on(message('text'), async ctx => {
         } catch {
           await ctx.reply(summaryResponse, { parse_mode: 'Markdown' });
         }
-        console.log(`📝 TL;DR provided for replied message by ${username} in ${chatTitle}`);
+        logOperation({
+          level: 'INFO',
+          event: 'TLDR_REPLY',
+          message: `Provided TL;DR for replied message.`,
+          userId: ctx.from.id,
+          chatId: ctx.chat.id,
+          chatTitle,
+        });
         return;
       }
     }
@@ -100,7 +97,14 @@ bot.on(message('text'), async ctx => {
         // If reply fails, send as a regular message
         await ctx.reply(messageResponse, { parse_mode: 'Markdown' });
       }
-      console.log(`📜 Long message from ${username} in ${chatTitle}`);
+      logOperation({
+        level: 'INFO',
+        event: 'TLDR_LONG_MESSAGE',
+        message: `Provided TL;DR for a message longer than ${MAX_MESSAGE_LENGTH} chars.`,
+        userId: ctx.from.id,
+        chatId: ctx.chat.id,
+        chatTitle,
+      });
       return;
     }
   }
@@ -108,8 +112,14 @@ bot.on(message('text'), async ctx => {
 
 // Error handling for bot
 bot.catch((err, ctx) => {
+  logOperation({
+    level: 'ERROR',
+    event: 'BOT_ERROR',
+    message: err instanceof Error ? err.message : String(err),
+    chatId: ctx.chat?.id,
+    userId: ctx.from?.id,
+  });
   console.error('❌ Bot error occurred:', err);
-  console.error('Context:', ctx);
 });
 
 // Get bot info and launch
@@ -118,9 +128,11 @@ bot.telegram
   .then(botInfo => {
     botUsername = botInfo.username;
     console.log(`🤖 Bot started: @${botInfo.username}`);
+    logOperation({ level: 'INFO', event: 'BOT_START', message: `Bot started as @${botInfo.username}` });
   })
   .catch(() => {
     console.log('ℹ️ Could not retrieve bot info');
+    logOperation({ level: 'ERROR', event: 'BOT_START_FAILURE', message: 'Could not retrieve bot info on startup.' });
   });
 
 bot.launch();
@@ -129,10 +141,12 @@ console.log('✅ TL;DR bot is running!');
 // Enable graceful stop
 process.once('SIGINT', () => {
   console.log('🛑 Received SIGINT. Stopping bot gracefully...');
+  logOperation({ level: 'INFO', event: 'BOT_STOP', message: 'Received SIGINT' });
   bot.stop('SIGINT');
 });
 
 process.once('SIGTERM', () => {
   console.log('🛑 Received SIGTERM. Stopping bot gracefully...');
+  logOperation({ level: 'INFO', event: 'BOT_STOP', message: 'Received SIGTERM' });
   bot.stop('SIGTERM');
 });

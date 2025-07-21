@@ -91,3 +91,7 @@ bun-debug.log*
 .env.local
 config.local.js
 config.local.json
+
+# Databases
+*.sqlite
+*.sqlite3

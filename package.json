@@ -3,6 +3,9 @@
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
     "watch": "bun --watch run src/index.ts",
+    "logs-server": "bun run server.js",
+    "logs-dev": "bun run --watch server.js",
+    "dashboard": "bun run server.js",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop tldr-telegram-bot",
     "pm2:restart": "pm2 restart tldr-telegram-bot",
@@ -17,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "bun-types": "^1.2.19",
     "typescript": "^5.8.3"
   }
 }

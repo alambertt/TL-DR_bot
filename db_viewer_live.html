@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TL;DR Bot Logs Viewer - Live</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .live-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 10px;
+        }
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .table-container {
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .level-INFO {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .level-WARN {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .level-ERROR {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .timestamp {
+            font-family: monospace;
+            color: #666;
+        }
+        .event {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .filter-section {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        select, input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .stats-extra {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .stat-mini {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                <span>LIVE</span>
+            </div>
+            <h1>🤖 TL;DR Bot Logs Dashboard</h1>
+            <p>Real-time monitoring of bot operations</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalLogs">-</div>
+                <div class="stat-label">Total Logs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayLogs">-</div>
+                <div class="stat-label">Today's Logs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uniqueUsers">-</div>
+                <div class="stat-label">Unique Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uniqueChats">-</div>
+                <div class="stat-label">Unique Chats</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="controls-row">
+                <button class="btn" onclick="loadData()">🔄 Refresh Data</button>
+                <div class="auto-refresh">
+                    <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                    <label for="autoRefresh">Auto-refresh (30s)</label>
+                </div>
+                <select id="limitSelect" onchange="updateLimit()">
+                    <option value="0">All Records</option>
+                    <option value="10">Last 10</option>
+                    <option value="50" selected>Last 50</option>
+                    <option value="100">Last 100</option>
+                </select>
+                <button class="btn btn-secondary" onclick="exportData()">📥 Export CSV</button>
+            </div>
+            
+            <div class="filter-section">
+                <div class="controls-row">
+                    <select id="eventFilter" onchange="applyFilters()">
+                        <option value="">All Events</option>
+                    </select>
+                    <select id="levelFilter" onchange="applyFilters()">
+                        <option value="">All Levels</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARN">WARN</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="Search messages..." onkeyup="applyFilters()">
+                </div>
+            </div>
+            
+            <div class="stats-extra" id="statsExtra">
+                <!-- Dynamic stats will be loaded here -->
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="loading" class="loading">Loading data...</div>
+            <table id="logsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Event</th>
+                        <th>Message</th>
+                        <th>User ID</th>
+                        <th>Chat ID</th>
+                        <th>Chat Title</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let filteredLogs = [];
+        let autoRefreshInterval = null;
+        
+        function formatTimestamp(timestamp) {
+            return new Date(timestamp + 'Z').toLocaleString();
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('logsTable').style.display = 'none';
+        }
+        
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('logsTable').style.display = 'none';
+            hideError();
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('logsTable').style.display = 'table';
+        }
+        
+        async function loadData() {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                allLogs = data.logs;
+                updateStats(data.stats);
+                populateFilters(data.stats);
+                applyFilters();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Failed to load data: ' + error.message);
+            }
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('totalLogs').textContent = stats.total_logs;
+            document.getElementById('todayLogs').textContent = stats.today_logs;
+            document.getElementById('uniqueUsers').textContent = stats.unique_users;
+            document.getElementById('uniqueChats').textContent = stats.unique_chats;
+            
+            // Update extra stats
+            const statsExtra = document.getElementById('statsExtra');
+            let extraStatsHtml = '';
+            
+            // Event counts
+            for (const [event, count] of Object.entries(stats.event_counts)) {
+                extraStatsHtml += `
+                    <div class="stat-mini">
+                        <strong>${count}</strong><br>
+                        <small>${event}</small>
+                    </div>
+                `;
+            }
+            
+            // Level counts
+            for (const [level, count] of Object.entries(stats.level_counts)) {
+                extraStatsHtml += `
+                    <div class="stat-mini">
+                        <strong>${count}</strong><br>
+                        <small>${level}</small>
+                    </div>
+                `;
+            }
+            
+            statsExtra.innerHTML = extraStatsHtml;
+        }
+        
+        function populateFilters(stats) {
+            const eventFilter = document.getElementById('eventFilter');
+            eventFilter.innerHTML = '<option value="">All Events</option>';
+            
+            for (const event of Object.keys(stats.event_counts)) {
+                eventFilter.innerHTML += `<option value="${event}">${event}</option>`;
+            }
+        }
+        
+        function applyFilters() {
+            const eventFilter = document.getElementById('eventFilter').value;
+            const levelFilter = document.getElementById('levelFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const limit = parseInt(document.getElementById('limitSelect').value);
+            
+            filteredLogs = allLogs.filter(log => {
+                if (eventFilter && log.event !== eventFilter) return false;
+                if (levelFilter && log.level !== levelFilter) return false;
+                if (searchTerm && !log.message?.toLowerCase().includes(searchTerm)) return false;
+                return true;
+            });
+            
+            if (limit > 0) {
+                filteredLogs = filteredLogs.slice(0, limit);
+            }
+            
+            renderTable();
+        }
+        
+        function renderTable() {
+            const tbody = document.getElementById('logsBody');
+            tbody.innerHTML = filteredLogs.map(log => `
+                <tr>
+                    <td>${log.id}</td>
+                    <td class="timestamp">${formatTimestamp(log.timestamp)}</td>
+                    <td class="level-${log.level}">${log.level}</td>
+                    <td><span class="event">${log.event}</span></td>
+                    <td>${log.message || ''}</td>
+                    <td>${log.user_id || ''}</td>
+                    <td>${log.chat_id || ''}</td>
+                    <td>${log.chat_title || ''}</td>
+                </tr>
+            `).join('');
+        }
+        
+        function updateLimit() {
+            applyFilters();
+        }
+        
+        function toggleAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            
+            if (checkbox.checked) {
+                autoRefreshInterval = setInterval(loadData, 30000); // 30 seconds
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+        }
+        
+        function exportData() {
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "ID,Timestamp,Level,Event,Message,User ID,Chat ID,Chat Title\n"
+                + filteredLogs.map(log => {
+                    return [
+                        log.id,
+                        log.timestamp,
+                        log.level,
+                        log.event,
+                        `"${(log.message || '').replace(/"/g, '""')}"`,
+                        log.user_id || '',
+                        log.chat_id || '',
+                        `"${(log.chat_title || '').replace(/"/g, '""')}"`
+                    ].join(',');
+                }).join('\n');
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `tldr_bot_logs_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
