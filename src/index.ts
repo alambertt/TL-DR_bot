@@ -34,6 +34,8 @@ if (!GEMINI_API_KEY) {
 }
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
+let botUsername = '@tldread_bot';
+
 const bot = new Telegraf(BOT_TOKEN);
 bot.start(ctx => ctx.reply('Welcome to TL;DR_bot!'));
 
@@ -46,6 +48,35 @@ bot.on(message('text'), async ctx => {
     const username = ctx.from?.username || ctx.from?.first_name || 'Unknown user';
     const chatTitle = 'title' in ctx.chat ? ctx.chat.title : 'Unknown group';
     const messageText = ctx.message.text || '';
+
+    // If the bot is mentioned in a reply, generate a TL;DR for the replied-to message
+    if (ctx.message.reply_to_message && botUsername && messageText.includes(`@${botUsername}`)) {
+      const originalText =
+        (ctx.message.reply_to_message as any).text || (ctx.message.reply_to_message as any).caption || '';
+
+      if (originalText.trim().length > 0) {
+        let summaryResponse = '';
+        const genResponse = await ai.models.generateContentStream({
+          model: GEMINI_MODEL,
+          contents: SHORTER_PROMPT + `${originalText}`,
+        });
+        for await (const chunk of genResponse) {
+          summaryResponse += chunk.text;
+        }
+        summaryResponse = summaryResponse.trim().replace(/\* /g, '');
+
+        try {
+          await ctx.reply(summaryResponse, {
+            reply_parameters: { message_id: ctx.message.reply_to_message.message_id },
+            parse_mode: 'Markdown',
+          });
+        } catch {
+          await ctx.reply(summaryResponse, { parse_mode: 'Markdown' });
+        }
+        console.log(`📝 TL;DR provided for replied message by ${username} in ${chatTitle}`);
+        return;
+      }
+    }
 
     if (messageText.length > MAX_MESSAGE_LENGTH) {
       let messageResponse = '';
@@ -85,6 +116,7 @@ bot.catch((err, ctx) => {
 bot.telegram
   .getMe()
   .then(botInfo => {
+    botUsername = botInfo.username;
     console.log(`🤖 Bot started: @${botInfo.username}`);
   })
   .catch(() => {
