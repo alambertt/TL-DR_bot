@@ -61,7 +61,8 @@ bot.on(message('text'), async ctx => {
             parse_mode: 'Markdown',
           });
         } catch {
-          await ctx.reply(summaryResponse, { parse_mode: 'Markdown' });
+          console.log('⚠️ Could not reply to original message, sending as regular message instead');
+          await ctx.reply(summaryResponse);
         }
         logOperation({
           level: 'INFO',
