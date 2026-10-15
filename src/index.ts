@@ -25,7 +25,7 @@ if (!GEMINI_API_KEY) {
 }
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-let botUsername = '@tldread_bot';
+let botUsername = 'tldread_bot';
 
 const bot = new Telegraf(BOT_TOKEN);
 bot.start(ctx => ctx.reply('Welcome to TL;DR_bot!'));
@@ -38,9 +38,10 @@ bot.on(message('text'), async ctx => {
     // Message from a group chat
     const chatTitle = 'title' in ctx.chat ? ctx.chat.title : 'Unknown group';
     const messageText = ctx.message.text || '';
+    const botWasMentioned = botUsername ? messageText.includes(`@${botUsername}`) : false;
 
     // If the bot is mentioned in a reply, generate a TL;DR for the replied-to message
-    if (ctx.message.reply_to_message && botUsername && messageText.includes(`@${botUsername}`)) {
+    if (ctx.message.reply_to_message && botWasMentioned) {
       const originalText =
         (ctx.message.reply_to_message as any).text || (ctx.message.reply_to_message as any).caption || '';
 

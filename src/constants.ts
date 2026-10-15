@@ -10,4 +10,4 @@ REMEMBER: Your response must be in the same language as the original text below.
 
 Text: `;
 
-export const GEMINI_MODEL = 'gemini-3-flash-preview';
+export const GEMINI_MODEL = 'gemini-3.8-flash';
